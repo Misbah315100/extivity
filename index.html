@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0F1629">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Extivity">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <title>Extivity</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+  <div id="app" role="main">
+
+    <header class="topbar">
+      <div class="topbar-logo">e<span class="logo-x">x</span>tivity</div>
+      <div class="topbar-right">
+        <span class="topbar-date" id="topbar-date"></span>
+        <button id="gcal-btn" class="gcal-topbar-btn" aria-label="Connect Google Calendar">
+          <i class="ti ti-calendar-plus" aria-hidden="true"></i>
+          <span id="gcal-btn-label">Connect</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="view-tabs" aria-label="Calendar view">
+      <button class="view-tab active" data-view="week">Schedule</button>
+      <button class="view-tab" data-view="grid">Week grid</button>
+      <button class="view-tab" data-view="month">Month</button>
+    </nav>
+
+    <section id="week-view" class="week-view" aria-label="Week view">
+      <div class="week-strip-wrap">
+        <div class="week-strip-month">
+          <span id="month-label"></span>
+        </div>
+        <div class="day-strip" id="day-strip"></div>
+      </div>
+      <div class="schedule-scroll" id="schedule-scroll">
+        <div id="schedule-list" role="list"></div>
+      </div>
+    </section>
+
+    <section id="grid-view" class="grid-view hidden" aria-label="Week grid view">
+      <div class="grid-header">
+        <div class="grid-header-spacer"></div>
+        <div id="grid-header-cols" style="display:contents;"></div>
+      </div>
+      <div class="grid-scroll" id="grid-scroll">
+        <div class="grid-body" id="grid-body"></div>
+      </div>
+    </section>
+
+    <section id="month-view" class="month-view hidden" aria-label="Month view">
+      <div class="month-nav">
+        <button class="month-nav-btn" id="month-prev"><i class="ti ti-chevron-left"></i></button>
+        <span class="month-nav-title" id="month-nav-title"></span>
+        <button class="month-nav-btn" id="month-next"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="month-grid-header">
+        <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+      </div>
+      <div class="month-grid" id="month-grid" role="grid"></div>
+    </section>
+
+    <!-- FAB add button -->
+    <button id="fab" class="fab" aria-label="Add event">
+      <i class="ti ti-plus"></i>
+    </button>
+
+    <div class="ai-dock">
+      <div class="ai-dock-row">
+        <div class="ai-input-wrap">
+          <i class="ti ti-sparkles ai-spark"></i>
+          <textarea id="ai-input" class="ai-input" placeholder="Ask anything or add an event..." rows="1"></textarea>
+        </div>
+        <button id="send-btn" class="send-btn" aria-label="Send">
+          <i class="ti ti-arrow-up"></i>
+        </button>
+      </div>
+      <div class="quick-chips">
+        <button class="chip" data-prompt="What should I focus on today?">Today's focus</button>
+        <button class="chip" data-prompt="When am I free this week?">Free time?</button>
+        <button class="chip" data-prompt="Turkey prep — what's left to do?">Turkey prep</button>
+        <button class="chip" data-prompt="Am I overloaded this week?">Overloaded?</button>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+
+    <!-- AI response sheet -->
+    <div id="ai-sheet" class="ai-sheet ai-sheet-tall">
+      <div class="sheet-handle"></div>
+      <button id="sheet-close" class="sheet-close"><i class="ti ti-x"></i></button>
+      <div class="sheet-label"><i class="ti ti-sparkles"></i> Ext AI</div>
+      <div id="sheet-content" class="sheet-thread"></div>
+      <div id="sheet-actions"></div>
+      <div class="sheet-reply-row">
+        <input type="text" id="sheet-reply-input" class="sheet-reply-input" placeholder="Reply..." autocomplete="off">
+        <button id="sheet-reply-btn" class="send-btn" aria-label="Send reply">
+          <i class="ti ti-arrow-up"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add / Edit event sheet -->
+    <div id="event-sheet" class="ai-sheet event-sheet">
+      <div class="sheet-handle"></div>
+      <button id="event-sheet-close" class="sheet-close"><i class="ti ti-x"></i></button>
+      <div class="sheet-label" id="event-sheet-label"><i class="ti ti-calendar-event"></i> New event</div>
+
+      <div class="event-form">
+        <input type="hidden" id="edit-event-id">
+        <input type="hidden" id="edit-event-gcal-id">
+
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" id="form-title" class="form-input" placeholder="Event name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date from</label>
+            <input type="date" id="form-date-from" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date to <span style="font-weight:400;text-transform:none;color:var(--text-3)">(optional)</span></label>
+            <input type="date" id="form-date-to" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input type="time" id="form-time" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <select id="form-duration" class="form-input">
+              <option value="30">30 min</option>
+              <option value="60" selected>1 hour</option>
+              <option value="90">1.5 hours</option>
+              <option value="120">2 hours</option>
+              <option value="180">3 hours</option>
+              <option value="480">All day</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <div class="cat-pills" id="cat-pills">
+            <button class="cat-pill active" data-cat="work">Work</button>
+            <button class="cat-pill" data-cat="personal">Personal</button>
+            <button class="cat-pill" data-cat="health">Health</button>
+            <button class="cat-pill" data-cat="finance">Finance</button>
+            <button class="cat-pill" data-cat="travel">Travel</button>
+            <button class="cat-pill" data-cat="learn">Learn</button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="form-delete-btn" class="form-btn form-btn-delete hidden">
+            <i class="ti ti-trash"></i>
+          </button>
+          <button id="form-duplicate-btn" class="form-btn form-btn-duplicate hidden">
+            <i class="ti ti-copy"></i>
+          </button>
+          <button id="form-save-btn" class="form-btn form-btn-save">
+            <i class="ti ti-check"></i> Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Calendar connect sheet -->
+    <div id="gcal-sheet" class="ai-sheet">
+      <div class="sheet-handle"></div>
+      <button id="gcal-sheet-close" class="sheet-close"><i class="ti ti-x"></i></button>
+      <div class="sheet-label"><i class="ti ti-calendar"></i> Google Calendar</div>
+      <div id="gcal-content">
+        <p class="sheet-text" style="margin-bottom:16px;">Connect your Google Calendar so CalAI can read your real events and add new ones when you ask.</p>
+        <button id="gcal-connect-btn" class="gcal-btn" disabled>
+          <i class="ti ti-brand-google"></i>
+          Sign in with Google
+        </button>
+        <p style="font-size:12px;color:var(--text-3);margin-top:12px;line-height:1.6;">Loading Google libraries...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/calendar.js"></script>
+  <script src="js/gcal.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
